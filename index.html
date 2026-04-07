@@ -3,23 +3,154 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Checklist Interbev</title>
+    <title>Portail de Conformité Procédures</title>
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        body { margin: 0; background-color: #F3F4F6; }
+    </style>
 </head>
 <body>
     <div id="root"></div>
 
     <script type="text/babel">
-        // COLLE ICI LE CODE JAVASCRIPT (REACT) QUE JE T'AI DONNÉ PRÉCÉDEMMENT
-        // (Prends tout le contenu du composant, des constantes COLORS jusqu'à la fin)
-        
         const { useState, useEffect, useCallback } = React;
-        // ... (Insérer le script ici) ...
-        
+
+        // --- CONFIGURATION ANONYMISÉE ---
+        const COLORS = {
+            primary: "#1A3068",
+            secondary: "#C01030",
+            success: "#059669",
+            warning: "#D97706",
+            dark: "#1A1A1A",
+            gray: "#6B7280",
+            grayLight: "#F3F4F6",
+            border: "#E5E7EB",
+            white: "#FFFFFF",
+            greenLight: "#ECFDF5",
+            redLight: "#FDF2F2"
+        };
+
+        const PROCESSES = {
+            p1_frais: {
+                title: "1. Gestion des Frais Mobilité",
+                icon: "📋",
+                subTypes: {
+                    interne: { label: "Protocole Interne", color: COLORS.primary },
+                    ext_p: { label: "Protocole Externe (Physique)", color: COLORS.primary },
+                    ext_m: { label: "Protocole Externe (Morale)", color: COLORS.secondary },
+                },
+                checks: {
+                    interne: [
+                        { id: "p1_i_1", text: "Vérification de l'événement générateur (Objet précisé)" },
+                        { id: "p1_i_2", text: "Concordance montants/dates entre pièces et déclaration" },
+                        { id: "p1_i_3", text: "Imputation sur budget service (Code analytique)" },
+                        { id: "p1_i_4", text: "Vérification du code affaire sur l'ERP de référence" },
+                        { id: "p1_i_5", text: "Contrôle des titres de restauration (Non cumulable)" },
+                        { id: "p1_i_6", text: "Attestation sur l'honneur présente si original manquant" },
+                    ],
+                    ext_p: [
+                        { id: "p1_ep_1", text: "Objet de la dépense validé" },
+                        { id: "p1_ep_4", text: "Code affaire vérifié sur l'ERP de référence" },
+                        { id: "p1_ep_7", text: "Justificatifs kilométriques transmis au pôle validation" },
+                    ],
+                    ext_m: [
+                        { id: "p1_em_1", text: "⚠ Facture légale obligatoire (Entité morale)", alert: true },
+                        { id: "p1_em_2", text: "Vérification du modèle de document utilisé", alert: true },
+                        { id: "p1_em_6", text: "Code affaire vérifié sur l'ERP de référence" },
+                    ]
+                }
+            },
+            p2_debit: {
+                title: "2. Flux de Débit",
+                icon: "📑",
+                subTypes: null,
+                checks: {
+                    default: [
+                        { id: "p2_1", text: "Réception des justificatifs et attestations réglementaires" },
+                        { id: "p2_2", text: "Séquençage : Note > Attestation > Récapitulatif" },
+                        { id: "p2_4", text: "⚠ Absence d'imputation analytique directe", alert: true },
+                        { id: "p2_5", text: "Transmission au responsable pour affectation" },
+                    ],
+                }
+            }
+        };
+
+        const STORAGE_KEY = "proc-checklist-data";
+
+        function App() {
+            const [process, setProcess] = useState(null);
+            const [subType, setSubType] = useState(null);
+            const [checked, setChecked] = useState({});
+            const [dossierName, setDossierName] = useState("");
+            const [history, setHistory] = useState([]);
+
+            useEffect(() => {
+                const saved = localStorage.getItem(STORAGE_KEY);
+                if (saved) setHistory(JSON.parse(saved));
+            }, []);
+
+            const currentChecks = process ? (PROCESSES[process].checks[subType || "default"] || []) : [];
+            const progress = currentChecks.length ? Math.round((currentChecks.filter(c => checked[c.id]).length / currentChecks.length) * 100) : 0;
+
+            const resetAndSave = () => {
+                if (progress > 0) {
+                    const newHistory = [{ name: dossierName || "Sans nom", proc: PROCESSES[process].title, date: new Date().toLocaleDateString(), score: progress }, ...history].slice(0, 5);
+                    setHistory(newHistory);
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify(newHistory));
+                }
+                setProcess(null); setSubType(null); setChecked({}); setDossierName("");
+            };
+
+            if (!process) {
+                return (
+                    <div style={{ maxWidth: 500, margin: "40px auto", fontFamily: "sans-serif", padding: 20 }}>
+                        <h2 style={{ color: COLORS.primary, textAlign: "center" }}>Portail de Conformité</h2>
+                        {Object.entries(PROCESSES).map(([key, p]) => (
+                            <button key={key} onClick={() => setProcess(key)} style={{ display: "flex", alignItems: "center", gap: 15, width: "100%", padding: 20, marginBottom: 15, border: `1px solid ${COLORS.border}`, borderRadius: 12, backgroundColor: "white", cursor: "pointer" }}>
+                                <span style={{ fontSize: 30 }}>{p.icon}</span>
+                                <strong>{p.title}</strong>
+                            </button>
+                        ))}
+                    </div>
+                );
+            }
+
+            if (PROCESSES[process].subTypes && !subType) {
+                return (
+                    <div style={{ maxWidth: 500, margin: "40px auto", padding: 20, fontFamily: "sans-serif" }}>
+                        <button onClick={() => setProcess(null)} style={{ border: "none", background: "none", cursor: "pointer", color: COLORS.primary }}>← Retour</button>
+                        <h3>Choisir le protocole :</h3>
+                        {Object.entries(PROCESSES[process].subTypes).map(([key, st]) => (
+                            <button key={key} onClick={() => setSubType(key)} style={{ width: "100%", padding: 20, marginBottom: 10, border: `2px solid ${st.color}22`, borderRadius: 12, backgroundColor: "white", cursor: "pointer", fontWeight: "bold", color: st.color }}>
+                                {st.label}
+                            </button>
+                        ))}
+                    </div>
+                );
+            }
+
+            return (
+                <div style={{ maxWidth: 500, margin: "20px auto", padding: 20, fontFamily: "sans-serif" }}>
+                    <button onClick={() => {setSubType(null); if(!PROCESSES[process].subTypes) setProcess(null);}} style={{ border: "none", background: "none", cursor: "pointer" }}>← Retour</button>
+                    <div style={{ height: 8, background: COLORS.grayLight, borderRadius: 4, margin: "20px 0" }}>
+                        <div style={{ width: `${progress}%`, height: "100%", background: COLORS.success, transition: "0.3s", borderRadius: 4 }} />
+                    </div>
+                    <input style={{ width: "100%", padding: 12, marginBottom: 20, borderRadius: 8, border: `1px solid ${COLORS.border}`, boxSizing: "border-box" }} placeholder="Référence du dossier..." value={dossierName} onChange={e => setDossierName(e.target.value)} />
+                    {currentChecks.map(item => (
+                        <label key={item.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: 15, background: checked[item.id] ? COLORS.greenLight : (item.alert ? COLORS.redLight : "white"), border: `1px solid ${COLORS.border}`, borderRadius: 10, marginBottom: 8, cursor: "pointer" }}>
+                            <input type="checkbox" checked={!!checked[item.id]} onChange={() => setChecked({...checked, [item.id]: !checked[item.id]})} />
+                            <span style={{ textDecoration: checked[item.id] ? "line-through" : "none" }}>{item.text}</span>
+                        </label>
+                    ))}
+                    <button onClick={resetAndSave} style={{ width: "100%", padding: 15, marginTop: 20, borderRadius: 10, border: "none", backgroundColor: COLORS.primary, color: "white", fontWeight: "bold", cursor: "pointer" }}>Terminer</button>
+                </div>
+            );
+        }
+
         const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<ChecklistApp />);
+        root.render(<App />);
     </script>
 </body>
 </html>
