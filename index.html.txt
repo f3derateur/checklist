@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Checklist Interbev</title>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        // COLLE ICI LE CODE JAVASCRIPT (REACT) QUE JE T'AI DONNÉ PRÉCÉDEMMENT
+        // (Prends tout le contenu du composant, des constantes COLORS jusqu'à la fin)
+        
+        const { useState, useEffect, useCallback } = React;
+        // ... (Insérer le script ici) ...
+        
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<ChecklistApp />);
+    </script>
+</body>
+</html>
